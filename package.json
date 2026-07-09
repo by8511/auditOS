@@ -1,19 +1,11 @@
 {
-  "name": "8983ebff-c5b4-4c88-aa72-0a804ada1e67",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "name": "auditos-static-railway",
+  "version": "0.5.0",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "devDependencies": {
-    "playwright": "^1.61.1"
+  "engines": {
+    "node": ">=20"
   }
 }

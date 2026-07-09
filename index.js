@@ -1,39 +1,44 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const http = require("http");
+const path = require("path");
 
 const root = __dirname;
 const port = process.env.PORT || 3000;
+const defaultPrototype = "/prototypes/auditos-v0-5.html";
 
-const types = {
-  '.html': 'text/html; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.svg': 'image/svg+xml'
+const contentTypes = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".svg": "image/svg+xml",
+  ".pdf": "application/pdf",
 };
 
-http.createServer((req, res) => {
-  const urlPath = decodeURIComponent(req.url.split('?')[0]);
-  const filePath = path.join(root, urlPath === '/' ? '/prototypes/auditos-v0-5.html' : urlPath);
+function safePath(url) {
+  const urlPath = decodeURIComponent(url.split("?")[0]);
+  const requested = urlPath === "/" ? defaultPrototype : urlPath;
+  const fullPath = path.resolve(path.join(root, path.normalize(requested)));
+  return fullPath.startsWith(root) ? fullPath : null;
+}
 
-  if (!filePath.startsWith(root)) {
-    res.writeHead(403);
-    res.end('Forbidden');
+http.createServer((request, response) => {
+  const fullPath = safePath(request.url || "/");
+
+  if (!fullPath || !fs.existsSync(fullPath) || !fs.statSync(fullPath).isFile()) {
+    response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+    response.end("Not found");
     return;
   }
 
-  fs.readFile(filePath, (err, data) => {
-    if (err) {
-      res.writeHead(404);
-      res.end('Not found');
-      return;
-    }
-    res.writeHead(200, { 'Content-Type': types[path.extname(filePath)] || 'application/octet-stream' });
-    res.end(data);
+  response.writeHead(200, {
+    "content-type": contentTypes[path.extname(fullPath)] || "application/octet-stream",
+    "cache-control": "no-store",
   });
-}).listen(port, () => {
-  console.log(`Listening on ${port}`);
+  fs.createReadStream(fullPath).pipe(response);
+}).listen(port, "0.0.0.0", () => {
+  console.log(`Audit OS static prototype listening on :${port}`);
 });
