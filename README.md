@@ -17,12 +17,16 @@
 - `prototypes/auditos-v0-7.html`
 - `prototypes/auditos-v0-8.html`
 - `prototypes/auditos-v0-9.html`
+- `prototypes/auditos-v0-10.html`
+- `prototypes/auditos-v0-11.html`
 
 提交到 `main` 后，Railway 会执行 `npm start`，用 `index.js` 提供静态页面。
 
 ## 访问路径
 
-- 根路径 `/` 默认打开 v0.9
+- 根路径 `/` 默认打开 v0.11
+- v0.11: `/prototypes/auditos-v0-11.html`
+- v0.10: `/prototypes/auditos-v0-10.html`
 - v0.9: `/prototypes/auditos-v0-9.html`
 - v0.8: `/prototypes/auditos-v0-8.html`
 - v0.7: `/prototypes/auditos-v0-7.html`

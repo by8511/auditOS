@@ -4,7 +4,7 @@ const path = require("path");
 
 const root = __dirname;
 const port = process.env.PORT || 3000;
-const defaultPrototype = "/prototypes/auditos-v0-9.html";
+const defaultPrototype = "/prototypes/auditos-v0-11.html";
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
