@@ -1,0 +1,1585 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Audit OS v0.9 Prototype</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #ffffff;
+      --panel-2: #f9fafb;
+      --line: #d9e0e8;
+      --line-strong: #bcc8d6;
+      --ink: #17202a;
+      --muted: #5d6b7b;
+      --soft: #eef3f8;
+      --blue: #246bfe;
+      --cyan: #0f8fa3;
+      --green: #16845b;
+      --amber: #b46a00;
+      --red: #c23b3b;
+      --purple: #6e56cf;
+      --shadow: 0 12px 30px rgba(23, 32, 42, 0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+
+    button, input, select, textarea { font: inherit; }
+    input, textarea {
+      color: var(--ink);
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 252px 1fr;
+    }
+
+    .sidebar {
+      background: #101820;
+      color: #dbe6ef;
+      padding: 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .brand {
+      padding: 8px 10px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 20px;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+
+    .brand span {
+      color: #99a8b6;
+      font-size: 12px;
+    }
+
+    .project-card {
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .project-card .label {
+      color: #9eb0bf;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .project-card .name {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 10px;
+    }
+
+    .stage {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #b8e3ff;
+      font-size: 12px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--cyan);
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+
+    .nav {
+      display: grid;
+      gap: 4px;
+    }
+
+    .nav button {
+      border: 0;
+      background: transparent;
+      color: #b7c5d3;
+      text-align: left;
+      padding: 10px 11px;
+      border-radius: 7px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 40px;
+    }
+
+    .nav button.active {
+      color: #fff;
+      background: #24313d;
+    }
+
+    .nav small {
+      color: #8fa1b2;
+      font-size: 11px;
+    }
+
+    .nav-label {
+      display: grid;
+      gap: 2px;
+    }
+
+    .nav-label span {
+      color: inherit;
+      font-size: 13px;
+      line-height: 1.1;
+    }
+
+    .nav-label em {
+      color: #8fa1b2;
+      font-size: 11px;
+      font-style: normal;
+      line-height: 1.1;
+    }
+
+    .main {
+      min-width: 0;
+      padding: 20px 22px 34px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: 24px;
+      line-height: 1.2;
+      margin: 0 0 5px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 7px;
+      padding: 9px 12px;
+      min-height: 38px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .btn.primary {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: white;
+    }
+
+    .btn.ghost {
+      background: transparent;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .grid.metrics {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      min-height: 104px;
+    }
+
+    .metric .k {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 9px;
+    }
+
+    .metric .v {
+      font-size: 26px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .metric .hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .panel-head {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-head h2 {
+      font-size: 16px;
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .panel-body { padding: 14px; }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .table th {
+      color: var(--muted);
+      text-align: left;
+      font-size: 12px;
+      padding: 9px 8px;
+      border-bottom: 1px solid var(--line);
+      font-weight: 600;
+    }
+
+    .table td {
+      padding: 11px 8px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      line-height: 1.35;
+    }
+
+    .table tr:last-child td { border-bottom: 0; }
+
+    .truncate {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 7px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--soft);
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .badge.green { color: var(--green); background: #e9f7ef; border-color: #bfe4cf; }
+    .badge.amber { color: var(--amber); background: #fff3df; border-color: #ffd69a; }
+    .badge.red { color: var(--red); background: #ffecec; border-color: #f3b5b5; }
+    .badge.blue { color: var(--blue); background: #edf3ff; border-color: #bfd2ff; }
+    .badge.purple { color: var(--purple); background: #f2efff; border-color: #d7cff8; }
+
+    .tabs {
+      display: none;
+    }
+
+    .tabs.active { display: block; }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(100px, 1fr));
+      gap: 9px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .node {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 112px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .node.active {
+      border-color: var(--blue);
+      box-shadow: inset 0 0 0 1px var(--blue);
+    }
+
+    .node.missing {
+      border-style: dashed;
+      background: #fff7eb;
+    }
+
+    .node .type {
+      color: var(--muted);
+      font-size: 11px;
+      margin-bottom: 8px;
+    }
+
+    .node strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.32;
+      margin-bottom: 8px;
+    }
+
+    .node .id {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, .55fr);
+      gap: 14px;
+    }
+
+    .detail {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 160px;
+    }
+
+    .detail h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    .kv {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .kv div {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 7px;
+    }
+
+    .kv span:first-child { color: var(--muted); }
+
+    .risk-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .risk-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--panel);
+      cursor: pointer;
+    }
+
+    .risk-card.active {
+      border-color: var(--red);
+      box-shadow: inset 0 0 0 1px var(--red);
+    }
+
+    .risk-card .title {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .risk-card p, .detail p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .paper {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fff;
+    }
+
+    .paper h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .paper-section {
+      border-top: 1px solid var(--line);
+      padding-top: 11px;
+      margin-top: 11px;
+    }
+
+    .paper-section strong { display: block; margin-bottom: 6px; }
+
+    .copilot {
+      display: grid;
+      gap: 10px;
+    }
+
+    .question-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 76px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .answer {
+      background: #f7fbfd;
+      border: 1px solid #c7dde7;
+      border-radius: 8px;
+      padding: 13px;
+      line-height: 1.6;
+    }
+
+    .citations {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 9px;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .field input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 40px;
+      background: white;
+    }
+
+    .field select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 40px;
+      background: white;
+      color: var(--ink);
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .pbc-accordion {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .category-section {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .category-section.focus {
+      border-color: #f0a23a;
+      background: #fff8ed;
+      box-shadow: inset 0 0 0 1px #f0a23a;
+    }
+
+    .category-toggle {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 11px 12px;
+      text-align: left;
+    }
+
+    .category-toggle strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.28;
+      margin-bottom: 4px;
+    }
+
+    .category-toggle span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .category-meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .category-panel {
+      display: none;
+      padding: 0 12px 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .category-section.open .category-panel {
+      display: block;
+    }
+
+    .category-panel-grid {
+      display: grid;
+      grid-template-columns: minmax(0, .9fr) minmax(280px, 1.1fr);
+      gap: 12px;
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+    }
+
+    .section-label {
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .category-items {
+      margin: 0;
+      padding-left: 18px;
+      columns: 2;
+    }
+
+    .request-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .request-row {
+      display: grid;
+      gap: 5px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.72);
+      border-radius: 8px;
+      padding: 9px;
+    }
+
+    .request-row strong {
+      color: var(--ink);
+      font-size: 13px;
+    }
+
+    .request-row span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .action-card {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      border-radius: 8px;
+      padding: 12px;
+      min-height: 118px;
+    }
+
+    .action-card strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .action-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .profile-head {
+      display: grid;
+      grid-template-columns: 54px 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .avatar {
+      width: 54px;
+      height: 54px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: #dfe8ff;
+      color: var(--blue);
+      font-weight: 800;
+      font-size: 18px;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(16, 24, 32, .42);
+      z-index: 20;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal {
+      width: min(720px, 100%);
+      max-height: min(86vh, 720px);
+      overflow: auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: 0 24px 80px rgba(16, 24, 32, .26);
+    }
+
+    .modal .panel-head {
+      position: sticky;
+      top: 0;
+      background: var(--panel);
+      z-index: 1;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: 9px;
+      align-items: start;
+    }
+
+    .step .marker {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: var(--line-strong);
+      margin-top: 2px;
+    }
+
+    .step.done .marker { background: var(--green); }
+    .step.active .marker { background: var(--blue); }
+
+    .step strong { display: block; margin-bottom: 3px; }
+    .step span { color: var(--muted); font-size: 12px; line-height: 1.4; }
+
+    @media (max-width: 1060px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar {
+        position: static;
+        height: auto;
+      }
+      .nav {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .workspace, .split { grid-template-columns: 1fr; }
+      .grid.metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .action-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .main { padding: 14px; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .toolbar { justify-content: flex-start; }
+      .nav { grid-template-columns: 1fr 1fr; }
+      .grid.metrics { grid-template-columns: 1fr; }
+      .category-panel-grid { grid-template-columns: 1fr; }
+      .category-items { columns: 1; }
+      .profile-head { grid-template-columns: 46px 1fr; }
+      .profile-head .btn { grid-column: 1 / -1; width: 100%; justify-content: center; }
+      .table { min-width: 720px; }
+      .table-wrap { overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <strong>Audit OS</strong>
+        <span>基于审计证据管理、分析和风险识别的审计工作平台。</span>
+      </div>
+      <div class="project-card">
+        <div class="label">当前项目</div>
+        <div class="name">华东智造股份 2026 年度审计</div>
+        <div class="stage"><span class="dot"></span> Evidence Build · 第 12 天</div>
+      </div>
+      <nav class="nav" aria-label="Primary">
+        <button class="active" data-tab="overview" data-title="Overview 概览"><span class="nav-label"><span>Overview 概览</span><em>项目总览</em></span><small>4</small></button>
+        <button data-tab="requests" data-title="Requests 请求"><span class="nav-label"><span>Requests 请求</span><em>PBC 清单</em></span><small>38</small></button>
+        <button data-tab="evidence" data-title="Evidence 证据链"><span class="nav-label"><span>Evidence 证据链</span><em>证据图谱</em></span><small>7</small></button>
+        <button data-tab="risks" data-title="Risks 风险"><span class="nav-label"><span>Risks 风险</span><em>风险引擎</em></span><small>5</small></button>
+        <button data-tab="papers" data-title="Papers 底稿"><span class="nav-label"><span>Papers 底稿</span><em>工作底稿</em></span><small>12</small></button>
+        <button data-tab="copilot" data-title="AI Copilot 智能助手"><span class="nav-label"><span>AI Copilot 智能助手</span><em>引用回答</em></span><small>beta</small></button>
+        <button data-tab="review" data-title="Review 复核"><span class="nav-label"><span>Review 复核</span><em>经理队列</em></span><small>9</small></button>
+        <button data-tab="account" data-title="Account 用户中心"><span class="nav-label"><span>Account 用户中心</span><em>登录与权限</em></span><small>new</small></button>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="page-title">项目工作台</h1>
+          <div class="subtitle">所有风险、底稿和 AI 回答都必须回到证据链。</div>
+        </div>
+        <div class="toolbar">
+          <button class="btn" id="import-evidence">导入资料</button>
+          <button class="btn" id="send-reminder">发送催收</button>
+          <button class="btn primary" id="generate-review-pack">生成经理复核包</button>
+        </div>
+      </header>
+
+      <section class="grid metrics">
+        <div class="metric">
+          <div class="k">PBC 完成度</div>
+          <div class="v">71%</div>
+          <div class="hint">38 项请求，11 项待客户补充</div>
+        </div>
+        <div class="metric">
+          <div class="k">证据链完整度</div>
+          <div class="v">64%</div>
+          <div class="hint">收入链缺少物流签收节点</div>
+        </div>
+        <div class="metric">
+          <div class="k">高风险事项</div>
+          <div class="v">5</div>
+          <div class="hint">2 项待助理补证，3 项待经理复核</div>
+        </div>
+        <div class="metric">
+          <div class="k">底稿阻塞</div>
+          <div class="v">3</div>
+          <div class="hint">收入、应收、固定资产未完成引用</div>
+        </div>
+      </section>
+
+      <section class="tabs active" id="overview">
+        <div class="workspace">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>当前阻塞</h2>
+              <span class="badge red">需要处理</span>
+            </div>
+            <div class="panel-body table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th>事项</th><th>来源</th><th>影响底稿</th><th>负责人</th><th>状态</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>12 月 28 日销售收入缺少物流签收证明</td>
+                    <td>REV-EV-004</td>
+                    <td>收入确认</td>
+                    <td>王助理</td>
+                    <td><span class="badge amber">待补证</span></td>
+                  </tr>
+                  <tr>
+                    <td>供应商“华南包装”疑似重复付款</td>
+                    <td>CASH-R-002</td>
+                    <td>货币资金</td>
+                    <td>李助理</td>
+                    <td><span class="badge red">待复核</span></td>
+                  </tr>
+                  <tr>
+                    <td>固定资产折旧台账与总账差异 18.6 万</td>
+                    <td>FA-R-001</td>
+                    <td>固定资产</td>
+                    <td>王助理</td>
+                    <td><span class="badge amber">待解释</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h2>项目阶段</h2>
+              <span class="badge blue">Evidence Build</span>
+            </div>
+            <div class="panel-body timeline">
+              <div class="step done"><span class="marker"></span><div><strong>项目承接 / Engagement</strong><span>客户、期间、独立性和审计范围已确认</span></div></div>
+              <div class="step done"><span class="marker"></span><div><strong>审计计划 / Planning</strong><span>重要性水平、重点科目、时间表和人员分工已建立</span></div></div>
+              <div class="step done"><span class="marker"></span><div><strong>PBC 清单发出 / PBC Request</strong><span>已按 16 类资料生成分级分类请求</span></div></div>
+              <div class="step active"><span class="marker"></span><div><strong>证据链建立 / Evidence Build</strong><span>AI 已解析 214 个文件，正在连接业务节点</span></div></div>
+              <div class="step"><span class="marker"></span><div><strong>函证与外部证据 / Confirmation</strong><span>银行、客户、供应商、律师函证进入跟踪队列</span></div></div>
+              <div class="step"><span class="marker"></span><div><strong>现场测试 / Fieldwork</strong><span>执行收入、资金、存货、成本费用等重点测试</span></div></div>
+              <div class="step"><span class="marker"></span><div><strong>调整与复核 / Adjustment Review</strong><span>汇总审计调整、风险结论和经理复核意见</span></div></div>
+              <div class="step"><span class="marker"></span><div><strong>归档与签发 / Archive</strong><span>生成项目证据包、底稿包、复核记录和签发材料</span></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>审计计划 / Audit Plan</h2>
+            <span class="badge blue">v0.7 专业审计入口</span>
+          </div>
+          <div class="panel-body">
+            <div class="action-grid">
+              <div class="action-card">
+                <strong>重要性水平 / Materiality</strong>
+                <p>整体重要性：人民币 320 万；实际执行重要性：人民币 240 万；明显微小错报临界值：人民币 16 万。</p>
+              </div>
+              <div class="action-card">
+                <strong>重点科目</strong>
+                <p>收入、应收账款、存货、货币资金、固定资产、税费和关联方交易进入重点审计范围。</p>
+              </div>
+              <div class="action-card">
+                <strong>总体审计策略</strong>
+                <p>收入与资金循环采用控制了解 + 实质性程序；收入截止、回款匹配和期后红字发票作为特别关注。</p>
+              </div>
+            </div>
+            <div class="table-wrap" style="margin-top:14px">
+              <table class="table">
+                <thead>
+                  <tr><th>风险评估矩阵 / Risk Assessment Matrix</th><th>相关认定</th><th>关联 PBC</th><th>计划应对程序</th><th>当前状态</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>收入确认 · 发生 / 截止</td>
+                    <td>发生、截止、准确性</td>
+                    <td>PBC-04 收入：合同、订单、出库、签收、发票、回款</td>
+                    <td>扩大 12 月截止测试样本，补充 REV-EV-004 签收证据，检查期后退货和红字发票。</td>
+                    <td><span class="badge red">特别风险</span></td>
+                  </tr>
+                  <tr>
+                    <td>货币资金 · 完整性 / 权利义务</td>
+                    <td>存在、权利义务、完整性</td>
+                    <td>PBC-03 银行及资金：账户清单、流水、调节表、函证信息</td>
+                    <td>银行函证、受限资金检查、异常付款双人复核。</td>
+                    <td><span class="badge amber">高风险</span></td>
+                  </tr>
+                  <tr>
+                    <td>固定资产 · 计价</td>
+                    <td>计价、分摊、存在</td>
+                    <td>PBC-08 固定资产：台账、新增、报废、折旧计算、盘点</td>
+                    <td>重算折旧、抽查新增资产、追踪差异解释。</td>
+                    <td><span class="badge amber">待解释</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tabs" id="requests">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>PBC 请求清单</h2>
+            <button class="btn primary" id="simulate-upload">模拟客户上传</button>
+          </div>
+          <div class="panel-body">
+            <div class="pbc-accordion" id="pbc-accordion"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tabs" id="evidence">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>收入证据链</h2>
+            <span class="badge amber">1 个缺失节点</span>
+          </div>
+          <div class="panel-body split">
+            <div class="flow" id="evidence-flow"></div>
+            <div class="detail" id="evidence-detail"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tabs" id="risks">
+        <div class="split">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>风险引擎</h2>
+              <span class="badge red">5 open</span>
+            </div>
+            <div class="panel-body risk-list" id="risk-list"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h2>风险详情</h2>
+              <span class="badge blue">Human Review</span>
+            </div>
+            <div class="panel-body">
+              <div class="detail" id="risk-detail"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tabs" id="papers">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>收入底稿草稿</h2>
+            <span class="badge amber">经理未签核</span>
+          </div>
+          <div class="panel-body">
+            <div class="paper">
+              <h3>WP-REV-2026 收入确认测试</h3>
+              <span class="badge purple">AI Draft · 需人工复核</span>
+              <div class="paper-section">
+                <strong>测试目标</strong>
+                <p>确认 2026 年 12 月主要销售收入存在、准确、截止期间适当，并可追溯至合同、发货、验收、发票、回款和总账。</p>
+              </div>
+              <div class="paper-section">
+                <strong>已引用证据</strong>
+                <p>REV-EV-001 销售合同；REV-EV-002 销售订单；REV-EV-003 出库单；REV-EV-005 增值税发票；REV-EV-006 银行回款；REV-EV-007 总账分录。</p>
+              </div>
+              <div class="paper-section">
+                <strong>阻塞项</strong>
+                <p>REV-EV-004 物流签收单缺失，系统建议向客户补充签收证明或替代性验收证据。该底稿暂不能进入经理最终签核。</p>
+              </div>
+              <div class="paper-section">
+                <strong>人工结论</strong>
+                <textarea>待补充 REV-EV-004 后，由审计助理更新测试结论；经理复核前不得形成最终收入确认判断。</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>底稿索引 / Working Paper Index</h2>
+            <span class="badge blue">v0.8 编制复核闭环</span>
+          </div>
+          <div class="panel-body table-wrap">
+            <table class="table">
+              <thead>
+                <tr><th>底稿编号</th><th>底稿名称</th><th>编制人</th><th>复核人</th><th>人工结论</th><th>复核意见清除</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>REV-01</td>
+                  <td>REV-01 收入截止测试</td>
+                  <td>王助理 · 07-10</td>
+                  <td>陈经理 · 07-11</td>
+                  <td>REV-EV-004 补证前，仅能形成待补证结论。</td>
+                  <td><span class="badge amber" id="review-comment-status">REV-COM-01 · 待清除</span> <button class="btn" data-clear-review="REV-COM-01">清除意见</button></td>
+                </tr>
+                <tr>
+                  <td>CASH-02</td>
+                  <td>供应商重复付款检查</td>
+                  <td>李助理 · 07-10</td>
+                  <td>陈经理 · 07-11</td>
+                  <td>需补充供应商对账单和付款审批截图。</td>
+                  <td><span class="badge amber">CASH-COM-02 · 待客户资料</span></td>
+                </tr>
+                <tr>
+                  <td>FA-01</td>
+                  <td>固定资产折旧重算</td>
+                  <td>王助理 · 07-10</td>
+                  <td>陈经理 · 07-11</td>
+                  <td>折旧差异需管理层解释并追踪调整分录。</td>
+                  <td><span class="badge blue">FA-COM-01 · 复核中</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="tabs" id="copilot">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>AI Copilot</h2>
+            <span class="badge blue">证据引用强制开启</span>
+          </div>
+          <div class="panel-body copilot">
+            <div class="question-row">
+              <textarea id="question">为什么收入风险是五星？还缺什么证据？</textarea>
+              <button class="btn primary" id="ask">询问</button>
+            </div>
+            <div class="answer" id="answer"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tabs" id="review">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>经理复核队列</h2>
+            <span class="badge amber">9 个待处理</span>
+          </div>
+          <div class="panel-body table-wrap">
+            <table class="table">
+              <thead><tr><th>对象</th><th>类型</th><th>卡点</th><th>复核人</th><th>动作</th></tr></thead>
+              <tbody>
+                <tr><td>WP-REV-2026</td><td>底稿</td><td>缺失签收证据</td><td>陈经理</td><td><button class="btn">打开</button></td></tr>
+                <tr><td>CASH-R-002</td><td>风险</td><td>疑似重复付款</td><td>陈经理</td><td><button class="btn">复核</button></td></tr>
+                <tr><td>FA-R-001</td><td>风险</td><td>折旧差异</td><td>陈经理</td><td><button class="btn">要求解释</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>调整分录 / Adjusting Entries</h2>
+            <span class="badge red">v0.9 结论前处理</span>
+          </div>
+          <div class="panel-body table-wrap">
+            <table class="table">
+              <thead><tr><th>编号</th><th>来源事项</th><th>建议调整</th><th>管理层状态</th><th>处理</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>ADJ-REV-01</td>
+                  <td>收入截止测试 REV-R-001</td>
+                  <td>冲回未取得签收证明的 12 月收入 128 万，并重分类至合同负债。</td>
+                  <td><span class="badge amber" id="adjustment-status">ADJ-REV-01 · 待沟通</span></td>
+                  <td><button class="btn" data-accept-adjustment="ADJ-REV-01">标记已接受</button></td>
+                </tr>
+                <tr>
+                  <td>ADJ-FA-01</td>
+                  <td>固定资产折旧差异 FA-R-001</td>
+                  <td>补提折旧 18.6 万，影响管理费用和累计折旧。</td>
+                  <td><span class="badge blue">管理层复核中</span></td>
+                  <td><button class="btn">跟进说明</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>未更正错报汇总</h2>
+            <span class="badge amber">低于实际执行重要性</span>
+          </div>
+          <div class="panel-body">
+            <div class="action-grid">
+              <div class="action-card"><strong>当前未更正错报</strong><p>3 项，净影响利润 46.8 万，低于实际执行重要性 240 万，但需持续累计。</p></div>
+              <div class="action-card"><strong>对审计意见影响</strong><p>目前未达到修改审计意见阈值；若 ADJ-REV-01 被拒绝，需要重新评估收入特别风险。</p></div>
+              <div class="action-card"><strong>合伙人关注点</strong><p>收入截止调整、固定资产折旧差异、律师函未回函。</p></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>管理层沟通</h2>
+            <span class="badge blue">已形成会议议题</span>
+          </div>
+          <div class="panel-body">
+            <div class="action-grid">
+              <div class="action-card"><strong>沟通议题</strong><p>收入截止调整、未更正错报、律师函回函、管理层声明书。</p></div>
+              <div class="action-card"><strong>对象</strong><p>财务总监、销售负责人、仓储负责人、法务经理。</p></div>
+              <div class="action-card"><strong>输出</strong><p>生成管理层沟通纪要，回写复核队列和归档检查。</p></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-head">
+            <h2>归档检查 / Archive Checklist</h2>
+            <span class="badge amber">4 项待完成</span>
+          </div>
+          <div class="panel-body table-wrap">
+            <table class="table">
+              <thead><tr><th>检查项</th><th>责任人</th><th>状态</th><th>阻塞原因</th></tr></thead>
+              <tbody>
+                <tr><td>底稿索引完整</td><td>陈经理</td><td><span class="badge green">通过</span></td><td>无</td></tr>
+                <tr><td>重大判断事项复核</td><td>合伙人</td><td><span class="badge amber">待复核</span></td><td>收入截止调整待管理层回复</td></tr>
+                <tr><td>未更正错报汇总签字</td><td>陈经理</td><td><span class="badge amber">待签字</span></td><td>ADJ-REV-01 状态未最终确定</td></tr>
+                <tr><td>管理层声明书</td><td>客户财务总监</td><td><span class="badge red">未收到</span></td><td>等待客户盖章扫描件</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="tabs" id="account">
+        <div class="workspace">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>用户登录 / Sign in</h2>
+              <span class="badge blue">事务所工作区</span>
+            </div>
+            <div class="panel-body form-grid">
+              <div class="field">
+                <label for="email">邮箱</label>
+                <input id="email" type="email" value="manager@audit-os.test" autocomplete="email" />
+              </div>
+              <div class="field">
+                <label for="password">密码</label>
+                <input id="password" type="password" value="audit-os-demo" autocomplete="current-password" />
+              </div>
+              <div class="toolbar" style="justify-content:flex-start">
+                <button class="btn primary" id="login">登录</button>
+                <button class="btn" id="register">注册新事务所账号</button>
+              </div>
+              <div class="answer" id="auth-result">使用 Mock Data 登录后，可查看项目角色、权限和个人待办。</div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h2>用户中心 / Profile</h2>
+              <span class="badge green">Mock Account</span>
+            </div>
+            <div class="panel-body">
+              <div class="profile-head">
+                <div class="avatar">陈</div>
+                <div>
+                  <h3 style="margin:0 0 5px">陈经理 · 项目经理</h3>
+                  <div class="subtitle">华东智造股份项目组 · 审计经理权限</div>
+                </div>
+                <button class="btn">切换项目</button>
+              </div>
+              <div class="action-grid" style="margin-top:14px">
+                <div class="action-card"><strong>我的待办</strong><p>9 个复核项，3 个高风险事项，1 个客户催收未读回执。</p></div>
+                <div class="action-card"><strong>权限范围</strong><p>可查看全部证据链，可签核底稿，可生成项目归档包。</p></div>
+                <div class="action-card"><strong>通知偏好</strong><p>客户逾期、AI 高风险、助理提交复核包时站内提醒。</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="panel-head">
+        <h2 id="modal-title">操作</h2>
+        <button class="btn ghost" id="close-modal">关闭</button>
+      </div>
+      <div class="panel-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById("modal-backdrop");
+    const modalTitle = document.getElementById("modal-title");
+    const modalBody = document.getElementById("modal-body");
+
+    const pbcCategories = [
+      { code: "01", key: "corporate", name: "公司基本资料", en: "Corporate", level: "基础", items: ["营业执照", "公司章程", "股权结构", "组织架构", "董事会名单", "法定代表人", "银行开户信息", "子公司清单", "关联方名单"] },
+      { code: "02", key: "financial", name: "财务资料", en: "Financial", level: "核心", items: ["科目余额表", "总账", "明细账", "序时账", "试算平衡表", "调整分录", "会计政策", "会计估计"] },
+      { code: "03", key: "cash", name: "银行及资金", en: "Cash", level: "核心", items: ["银行账户清单", "银行流水", "银行余额调节表", "定期存款", "受限资金", "银行函证信息"] },
+      { code: "04", key: "revenue", name: "收入", en: "Revenue", level: "审计重点", focus: true, items: ["客户清单", "销售合同", "销售订单", "发货单", "出库单", "签收单", "发票", "回款记录", "收入确认政策"] },
+      { code: "05", key: "ar", name: "应收账款", en: "AR", level: "重点", items: ["应收账款账龄", "客户余额", "坏账准备", "对账单", "函证信息"] },
+      { code: "06", key: "ap", name: "采购及应付", en: "AP", level: "重点", items: ["供应商名单", "采购合同", "入库单", "发票", "应付账款明细", "付款记录"] },
+      { code: "07", key: "inventory", name: "存货", en: "Inventory", level: "重点", items: ["存货台账", "库存清单", "盘点表", "成本计算表", "跌价准备"] },
+      { code: "08", key: "fixed-assets", name: "固定资产", en: "Fixed Assets", level: "重点", items: ["固定资产台账", "新增资产", "报废资产", "折旧计算", "资产盘点"] },
+      { code: "09", key: "expense", name: "成本及费用", en: "Expense", level: "一般", items: ["成本计算表", "工资表", "社保", "公积金", "差旅费", "管理费用"] },
+      { code: "10", key: "tax", name: "税务", en: "Tax", level: "重点", items: ["纳税申报表", "增值税", "企业所得税", "个税", "税收优惠", "税务检查资料"] },
+      { code: "11", key: "hr", name: "人力资源", en: "HR", level: "一般", items: ["员工名单", "劳动合同", "工资明细", "年终奖", "社保缴纳"] },
+      { code: "12", key: "loan", name: "借款及融资", en: "Loan", level: "重点", items: ["借款合同", "利率", "担保", "抵押", "利息计算"] },
+      { code: "13", key: "investment", name: "投资", en: "Investment", level: "重点", items: ["股权投资", "长期股权投资", "金融资产", "投资协议"] },
+      { code: "14", key: "legal", name: "法务", en: "Legal", level: "高风险", items: ["未决诉讼", "仲裁", "律师函", "对外担保", "或有事项"] },
+      { code: "15", key: "internal-control", name: "内控", en: "Internal Control", level: "基础", items: ["流程制度", "授权审批", "OA审批流程", "风险控制制度"] },
+      { code: "16", key: "others", name: "其他", en: "Others", level: "补充", items: ["关联交易", "资产负债表日后事项", "持续经营说明", "管理层声明书"] }
+    ];
+
+    const requests = [
+      { item: "营业执照", category: "corporate", owner: "客户行政", due: "07-09", status: "accepted", node: "CORP-EV-001" },
+      { item: "科目余额表", category: "financial", owner: "客户财务", due: "07-10", status: "accepted", node: "GL-EV-001" },
+      { item: "总账", category: "financial", owner: "客户财务", due: "07-10", status: "accepted", node: "GL-EV-002" },
+      { item: "银行流水", category: "cash", owner: "客户出纳", due: "07-10", status: "accepted", node: "CASH-EV-002" },
+      { item: "销售合同", category: "revenue", owner: "客户销售财务", due: "07-11", status: "parsed", node: "REV-EV-001" },
+      { item: "销售订单 / 出库单", category: "revenue", owner: "客户仓储", due: "07-11", status: "parsed", node: "REV-EV-002 / 003" },
+      { item: "签收单", category: "revenue", owner: "客户仓储", due: "07-12", status: "missing", node: "REV-EV-004" },
+      { item: "收入确认政策", category: "revenue", owner: "客户财务", due: "07-12", status: "clarify", node: "REV-POL-001" },
+      { item: "应收账款账龄", category: "ar", owner: "客户应收会计", due: "07-12", status: "parsed", node: "AR-EV-001" },
+      { item: "采购合同 / 入库单", category: "ap", owner: "客户应付会计", due: "07-13", status: "parsed", node: "AP-EV-003" },
+      { item: "固定资产台账", category: "fixed-assets", owner: "客户资产会计", due: "07-12", status: "clarify", node: "FA-EV-003" },
+      { item: "未决诉讼", category: "legal", owner: "客户法务", due: "07-14", status: "missing", node: "LEGAL-EV-001" }
+    ];
+
+    const statusMap = {
+      accepted: ["已接受", "green"],
+      parsed: ["AI 已解析", "blue"],
+      missing: ["缺失", "red"],
+      clarify: ["待解释", "amber"],
+      uploaded: ["新上传", "purple"]
+    };
+
+    const evidenceNodes = [
+      { id: "REV-EV-001", type: "合同", title: "ZJ-2026-1208 销售合同", status: "complete", source: "销售合同_浙机客户.pdf", owner: "客户销售财务", note: "合同金额 428 万，约定 12 月发货验收后开票。" },
+      { id: "REV-EV-002", type: "订单", title: "客户采购订单 PO-8831", status: "complete", source: "PO_8831.xlsx", owner: "客户销售财务", note: "订单数量与合同附件一致。" },
+      { id: "REV-EV-003", type: "出库", title: "12 月 28 日成品出库单", status: "complete", source: "出库单_20261228.pdf", owner: "客户仓储", note: "出库金额与订单匹配。" },
+      { id: "REV-EV-004", type: "签收", title: "物流签收 / 验收证明", status: "missing", source: "未上传", owner: "客户仓储", note: "缺失关键截止性证据，收入底稿被阻塞。" },
+      { id: "REV-EV-005", type: "发票", title: "增值税发票 044219", status: "complete", source: "发票_044219.pdf", owner: "客户税务", note: "开票日期 12 月 29 日。" },
+      { id: "REV-EV-006", type: "回款", title: "银行回款 308 万", status: "complete", source: "银行回单_20270105.pdf", owner: "客户出纳", note: "期后回款与客户名称匹配。" },
+      { id: "REV-EV-007", type: "总账", title: "主营业务收入分录", status: "complete", source: "GL_2026.xlsx", owner: "客户财务", note: "分录日期 12 月 29 日，凭证号 2026-12-388。" }
+    ];
+
+    const risks = [
+      { id: "REV-R-001", stars: "★★★★★", title: "年底集中确认收入", reason: "12 月最后 5 天确认收入占全年 18.4%，且样本 REV-EV-004 缺少签收证明。", source: "REV-EV-003 / REV-EV-004 / GL_2026.xlsx", procedure: "补充签收或替代验收证据；扩大截止测试样本；检查期后退货和红字发票。", status: "待补证" },
+      { id: "CASH-R-002", stars: "★★★★☆", title: "疑似重复付款", reason: "供应商华南包装两笔付款金额、摘要、审批人高度一致，间隔 2 天。", source: "CASH-EV-002 / PAY-EV-006", procedure: "核对合同、发票、付款审批和供应商对账单。", status: "待经理复核" },
+      { id: "FA-R-001", stars: "★★★☆☆", title: "固定资产折旧差异", reason: "资产台账累计折旧与总账差异 18.6 万。", source: "FA-EV-003 / GL-EV-001", procedure: "检查折旧政策、资产启用日期和手工调整分录。", status: "待客户解释" }
+    ];
+
+    function badge(status) {
+      const [label, cls] = statusMap[status];
+      return `<span class="badge ${cls}">${label}</span>`;
+    }
+
+    function categoryLabel(key) {
+      const category = pbcCategories.find(c => c.key === key);
+      return category ? `${category.code} ${category.name} / ${category.en}` : key;
+    }
+
+    function categoryLevel(key) {
+      const category = pbcCategories.find(c => c.key === key);
+      return category ? category.level : "一般";
+    }
+
+    function renderPbcCategories(openKey = null) {
+      const accordion = document.getElementById("pbc-accordion");
+      accordion.innerHTML = pbcCategories.map(category => `
+        <section class="category-section ${category.focus ? "focus" : ""} ${category.key === openKey ? "open" : ""}">
+          <button class="category-toggle" type="button" aria-expanded="${category.key === openKey ? "true" : "false"}">
+            <span>
+              <strong>${category.code} ${category.name} / ${category.en}</strong>
+              <span>${category.items.slice(0, 4).join("、")}${category.items.length > 4 ? "..." : ""}</span>
+            </span>
+            <span class="category-meta">
+              <span class="badge ${category.focus ? "amber" : "blue"}">${category.level}</span>
+              <span class="badge">${category.items.length} 项</span>
+            </span>
+          </button>
+          <div class="category-panel">
+            <div class="category-panel-grid">
+              <div>
+                <div class="section-label">资料项</div>
+                <ul class="category-items">${category.items.map(item => `<li>${item}</li>`).join("")}</ul>
+              </div>
+              <div>
+                <div class="section-label">已建请求</div>
+                <div class="request-list">
+                  ${requests.filter(request => request.category === category.key).map(request => `
+                    <div class="request-row">
+                      <strong>${request.item}</strong>
+                      <span>${request.node} · ${request.owner} · 截止 ${request.due}</span>
+                      <span>${badge(request.status)}</span>
+                    </div>`).join("") || '<div class="request-row"><strong>暂未创建具体请求</strong><span>需要时由项目经理从资料项中生成 PBC 请求。</span></div>'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>`).join("");
+      accordion.querySelectorAll(".category-toggle").forEach(button => {
+        button.addEventListener("click", () => {
+          const section = button.closest(".category-section");
+          const isOpen = section.classList.toggle("open");
+          button.setAttribute("aria-expanded", String(isOpen));
+        });
+      });
+    }
+
+    function renderRequests() {
+      renderPbcCategories();
+    }
+
+    function renderEvidence(activeId = "REV-EV-004") {
+      const flow = document.querySelector("#evidence-flow");
+      flow.innerHTML = evidenceNodes.map(n => `
+        <div class="node ${n.status === "missing" ? "missing" : ""} ${n.id === activeId ? "active" : ""}" data-id="${n.id}">
+          <div class="type">${n.type}</div>
+          <strong>${n.title}</strong>
+          <div class="id">${n.id}</div>
+          <div style="margin-top:8px">${n.status === "missing" ? '<span class="badge red">缺失</span>' : '<span class="badge green">已链接</span>'}</div>
+        </div>`).join("");
+      flow.querySelectorAll(".node").forEach(node => {
+        node.addEventListener("click", () => renderEvidence(node.dataset.id));
+      });
+      const active = evidenceNodes.find(n => n.id === activeId);
+      document.querySelector("#evidence-detail").innerHTML = `
+        <h3>${active.title}</h3>
+        <p>${active.note}</p>
+        <div class="kv">
+          <div><span>证据编号</span><strong>${active.id}</strong></div>
+          <div><span>来源文件</span><strong>${active.source}</strong></div>
+          <div><span>责任方</span><strong>${active.owner}</strong></div>
+          <div><span>状态</span><strong>${active.status === "missing" ? "缺失，阻塞底稿" : "已解析并链接"}</strong></div>
+        </div>`;
+    }
+
+    function renderRisks(activeId = "REV-R-001") {
+      const list = document.querySelector("#risk-list");
+      list.innerHTML = risks.map(r => `
+        <div class="risk-card ${r.id === activeId ? "active" : ""}" data-id="${r.id}">
+          <div class="title"><span>${r.title}</span><span>${r.stars}</span></div>
+          <p>${r.reason}</p>
+          <div style="margin-top:9px"><span class="badge amber">${r.status}</span></div>
+        </div>`).join("");
+      list.querySelectorAll(".risk-card").forEach(card => {
+        card.addEventListener("click", () => renderRisks(card.dataset.id));
+      });
+      const active = risks.find(r => r.id === activeId);
+      document.querySelector("#risk-detail").innerHTML = `
+        <h3>${active.id} · ${active.title}</h3>
+        <p>${active.reason}</p>
+        <div class="kv">
+          <div><span>风险等级</span><strong>${active.stars}</strong></div>
+          <div><span>证据来源</span><strong>${active.source}</strong></div>
+          <div><span>建议程序</span><strong>${active.procedure}</strong></div>
+          <div><span>复核状态</span><strong>${active.status}</strong></div>
+        </div>`;
+    }
+
+    function answerCopilot() {
+      document.querySelector("#answer").innerHTML = `
+        <strong>回答</strong><br>
+        收入风险被标为五星，主要不是因为系统已经形成审计结论，而是因为样本收入发生在年末、金额较大，且关键截止性证据 REV-EV-004 物流签收 / 验收证明缺失。当前证据链已覆盖合同、订单、出库、发票、期后回款和总账分录，但缺少能证明商品控制权已在 2026 年内转移的验收证据。<br><br>
+        <strong>建议下一步</strong><br>
+        向客户补充签收证明、客户验收单或其他替代证据；同时扩大 12 月 25 日至 12 月 31 日收入截止测试样本，并检查期后退货和红字发票。经理复核前，不应形成最终收入确认结论。
+        <div class="citations">
+          <span class="badge blue">REV-EV-001 合同</span>
+          <span class="badge blue">REV-EV-003 出库单</span>
+          <span class="badge red">REV-EV-004 缺失</span>
+          <span class="badge blue">GL_2026.xlsx</span>
+        </div>`;
+    }
+
+    function openModal(title, body) {
+      modalTitle.textContent = title;
+      modalBody.innerHTML = body;
+      modal.classList.add("active");
+    }
+
+    function closeModal() {
+      modal.classList.remove("active");
+    }
+
+    function openImportEvidence() {
+      openModal("导入资料 / Import Evidence", `
+        <div class="form-grid">
+          <div class="answer"><strong>按 PBC 分类上传</strong><br>先选择资料分类，系统会把文件挂到对应 PBC 清单和证据节点，避免客户资料进入一个无结构文件池。</div>
+          <div class="field">
+            <label for="pbc-category">PBC 分类</label>
+            <select id="pbc-category" aria-label="PBC 分类">
+              ${pbcCategories.map(category => `<option value="${category.key}" ${category.key === "revenue" ? "selected" : ""}>${category.code} ${category.name} / ${category.en}</option>`).join("")}
+            </select>
+          </div>
+          <div class="action-grid">
+            <div class="action-card"><strong>分类落点</strong><p id="category-target"></p></div>
+            <div class="action-card"><strong>AI 预解析</strong><p>识别文件类型、期间、金额、客户名和可能对应的证据节点。</p></div>
+            <div class="action-card"><strong>人工确认</strong><p>助理确认后才写入 Evidence Graph，避免错误引用。</p></div>
+          </div>
+          <div class="field">
+            <label for="mock-file">本次 Mock 文件</label>
+            <input id="mock-file" value="物流签收单_REV-EV-004.pdf" />
+          </div>
+          <div class="answer"><strong>预期结果</strong><br>文件会进入待解析队列，并优先匹配到 REV-EV-004 物流签收 / 验收证明。</div>
+          <div class="modal-actions">
+            <button class="btn" data-close>取消</button>
+            <button class="btn primary" id="confirm-import">导入并解析</button>
+          </div>
+        </div>`);
+      const select = document.getElementById("pbc-category");
+      const target = document.getElementById("category-target");
+      const updateTarget = () => {
+        const category = pbcCategories.find(c => c.key === select.value);
+        target.textContent = `${category.code} ${category.name} / ${category.en}：${category.items.slice(0, 6).join("、")}`;
+      };
+      select.addEventListener("change", updateTarget);
+      updateTarget();
+      document.getElementById("confirm-import").addEventListener("click", () => {
+        const missing = requests.find(r => r.item === "签收单");
+        if (missing) {
+          missing.status = "uploaded";
+          missing.node = "REV-EV-004 · 待 AI 解析";
+          renderPbcCategories("revenue");
+        }
+        modalBody.innerHTML = `<div class="answer"><strong>已进入解析队列</strong><br>REV-EV-004 已收到资料，状态更新为“新上传”。系统将抽取签收日期、收货方和订单号，等待助理确认后链接到底稿。</div><div class="modal-actions"><button class="btn primary" data-close>完成</button></div>`;
+      });
+    }
+
+    function openReminder() {
+      openModal("发送催收 / Send Reminder", `
+        <div class="form-grid">
+          <div class="field">
+            <label for="reminder-to">催收对象</label>
+            <input id="reminder-to" value="客户仓储负责人 · zhang.warehouse@example.com" />
+          </div>
+          <div class="field">
+            <label for="reminder-content">催收内容</label>
+            <textarea id="reminder-content">请在 7 月 12 日 18:00 前补充 REV-EV-004 物流签收 / 验收证明。该文件会影响收入确认底稿和经理复核。</textarea>
+          </div>
+          <div class="action-grid">
+            <div class="action-card"><strong>发送渠道</strong><p>邮件 + 站内通知，保留已读回执。</p></div>
+            <div class="action-card"><strong>关联证据</strong><p>自动绑定 PBC 请求项和 Evidence Graph 节点。</p></div>
+            <div class="action-card"><strong>逾期升级</strong><p>逾期 24 小时后提醒项目经理。</p></div>
+          </div>
+          <div class="modal-actions">
+            <button class="btn" data-close>取消</button>
+            <button class="btn primary" id="confirm-reminder">发送催收</button>
+          </div>
+        </div>`);
+      document.getElementById("confirm-reminder").addEventListener("click", () => {
+        modalBody.innerHTML = `<div class="answer"><strong>催收已发送</strong><br>客户仓储负责人已收到 REV-EV-004 补证提醒；系统会记录发送时间、已读状态和后续上传动作。</div><div class="modal-actions"><button class="btn primary" data-close>完成</button></div>`;
+      });
+    }
+
+    function openReviewPack() {
+      openModal("经理复核包 / Review Package", `
+        <div class="form-grid">
+          <div class="action-grid">
+            <div class="action-card"><strong>底稿</strong><p>WP-REV-2026 收入确认测试草稿，含阻塞项。</p></div>
+            <div class="action-card"><strong>风险</strong><p>REV-R-001、CASH-R-002、FA-R-001 及建议程序。</p></div>
+            <div class="action-card"><strong>证据索引</strong><p>合同、订单、出库、发票、回款和总账引用清单。</p></div>
+          </div>
+          <div class="answer"><strong>复核包状态</strong><br>当前可以生成“待补证版本”。系统会清楚标注 REV-EV-004 缺失，禁止误导为最终签核包。</div>
+          <div class="modal-actions">
+            <button class="btn" data-close>取消</button>
+            <button class="btn primary" id="confirm-pack">生成待复核包</button>
+          </div>
+        </div>`);
+      document.getElementById("confirm-pack").addEventListener("click", () => {
+        modalBody.innerHTML = `<div class="answer"><strong>复核包已生成</strong><br>包名：ReviewPack_华东智造_2026_REV_Draft.zip。包含证据索引、收入底稿草稿、风险说明和缺失证据清单。</div><div class="modal-actions"><button class="btn primary" data-close>完成</button></div>`;
+      });
+    }
+
+    document.querySelectorAll(".nav button").forEach(button => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".nav button").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tabs").forEach(t => t.classList.remove("active"));
+        button.classList.add("active");
+        document.getElementById(button.dataset.tab).classList.add("active");
+        document.getElementById("page-title").textContent = button.dataset.title;
+      });
+    });
+
+    document.getElementById("simulate-upload").addEventListener("click", () => {
+      const missing = requests.find(r => r.item === "签收单");
+      if (missing) {
+        missing.status = "uploaded";
+        missing.node = "REV-EV-004 · 待 AI 解析";
+        renderPbcCategories("revenue");
+      }
+    });
+
+    document.getElementById("ask").addEventListener("click", answerCopilot);
+    document.getElementById("import-evidence").addEventListener("click", openImportEvidence);
+    document.getElementById("send-reminder").addEventListener("click", openReminder);
+    document.getElementById("generate-review-pack").addEventListener("click", openReviewPack);
+    document.addEventListener("click", event => {
+      const button = event.target.closest("[data-clear-review]");
+      if (!button) return;
+      const status = document.getElementById("review-comment-status");
+      if (status) {
+        status.className = "badge green";
+        status.textContent = `${button.dataset.clearReview} · 已清除`;
+      }
+    });
+    document.addEventListener("click", event => {
+      const button = event.target.closest("[data-accept-adjustment]");
+      if (!button) return;
+      const status = document.getElementById("adjustment-status");
+      if (status) {
+        status.className = "badge green";
+        status.textContent = `${button.dataset.acceptAdjustment} · 已接受`;
+      }
+    });
+    document.getElementById("close-modal").addEventListener("click", closeModal);
+    modal.addEventListener("click", event => {
+      if (event.target === modal || event.target.hasAttribute("data-close")) closeModal();
+    });
+    document.getElementById("login").addEventListener("click", () => {
+      document.getElementById("auth-result").innerHTML = "<strong>已登录</strong><br>陈经理 · 项目经理，已进入华东智造股份 2026 年度审计工作区。";
+    });
+    document.getElementById("register").addEventListener("click", () => {
+      document.getElementById("auth-result").innerHTML = "<strong>创建事务所工作区</strong><br>填写事务所名称、管理员邮箱和默认项目模板后，即可邀请审计助理与客户联系人。";
+    });
+
+    renderPbcCategories();
+    renderEvidence();
+    renderRisks();
+    answerCopilot();
+  </script>
+</body>
+</html>
